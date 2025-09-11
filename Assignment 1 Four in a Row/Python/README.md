@@ -124,32 +124,153 @@ Printed board (`__str__`), rows top→bottom:
 
 Validity check: a column is valid iff its top cell is empty: `Board.is_valid(col) == (state[col, 0] == 0)`.
 
+### Internals: board array and move logic
+
+- `numpy.ndarray` of shape `(width, height)`.
+    
+- `state[col, row]`.
+    
+- Rows increase top→bottom, cols left→right.
+    
+- `Board.play` mutates, `Board.get_new_board` simulates.
+    
+
+Example (4×4):
+
+```python
+state = np.array([
+    [0, 0, 1, 1],  # col 0
+    [0, 0, 0, 2],  # col 1
+    [0, 0, 0, 0],  # col 2
+    [0, 0, 0, 0],  # col 3
+])
+```
+
+Printed:
+
+```
+ ---  ---  ---  --- 
+|   |   |   |   |
+ ---  ---  ---  --- 
+|   |   |   |   |
+ ---  ---  ---  --- 
+| X |   |   |   |
+ ---  ---  ---  --- 
+| X | O |   |   |
+ ===  ===  ===  === 
+| 1 | 2 | 3 | 4 |
+```
+
 ### Internals: win detection (app.winning)
 
-`winning(state, game_n)` is Numba-jitted and returns:
-- `1` or `2` if that player has `game_n` connected;
-- `-1` if the board is full (draw);
-- `0` otherwise.
-
-Checks performed:
-- Vertical: scan each column bottom→top, counting consecutive equal non-zero cells. Early break on the first empty because gravity forbids gaps below.
-- Horizontal: scan each row left→right, resetting count on `0`.
-- Diagonals:
-  - Ascending (`/`): from bottom-left toward top-right, using indices `(i + x, j' - x)`.
-  - Descending (`\`): from top-left toward bottom-right, using indices `(i' - x, j' - x)`.
-- Draw: `np.all(state[:, 0])` — if the top row is full across all columns, the board is full.
-
-Time complexity is linear in the number of cells for each pass; with Numba, it is fast enough for interactive play and heuristic evaluation.
+- Returns `1`/`2` if win, `-1` if draw, `0` otherwise.
+    
+- Scans vertical, horizontal, diagonals.
+    
+- Uses gravity and early breaks for speed.
+    
 
 ### Internals: heuristic scoring
 
-- Terminal states are scored immediately:
-  - Win for `player_id` → `+max(width, height)`
-  - Loss → `-max(width, height)`
-  - Draw → `0`
-- Non-terminal: score is the maximum contiguous run length of `player_id` across all directions in `state`.
-- `Heuristic.get_best_action` evaluates each valid column once by simulating a drop with `Board.get_new_board` and calling `evaluate_board`.
-- `Heuristic.eval_count` tracks total evaluations (reported after each game).
+- Terminal scoring:
+    
+    - Win for `player_id`: `+max(width, height)`
+        
+    - Loss: `-max(width, height)`
+        
+    - Draw: `0`
+        
+- Non-terminal: maximum contiguous run of `player_id` in any direction.
+    
+- `Heuristic.get_best_action`: tests each valid column once.
+    
+- `eval_count`: increments on each evaluation.
+    
+
+#### Examples of non-terminal scoring
+
+Evaluate as **player 1**:
+
+**Horizontal chain**
+
+```
+. . . . .
+. . . . .
+. . . . .
+1 1 1 . .
+```
+
+→ longest run = 3 → score = 3.
+
+**Vertical chain**
+
+```
+. . . .
+. . . .
+1 . . .
+1 . . .
+1 . . .
+```
+
+→ longest run = 3 → score = 3.
+
+**Diagonal chain**
+
+```
+. . . .
+. . . .
+. . 1 .
+. 1 . .
+1 . . .
+```
+
+→ diagonal of 3 → score = 3.
+
+**Opponent only**
+
+```
+. . . . .
+2 2 2 . .
+. . . . .
+. . . . .
+```
+
+→ player 1 has no pieces → score = 0.
+
+#### Example: get_best_action
+
+```
+col: 0 1 2 3 4 5 6
+5    . . . . . . .
+4    . . . . . . .
+3    . . . . . . .
+2    . . . . . . .
+1    2 . 2 . 1 . .
+0    1 1 1 . 2 . .
+     ↑       ↑
+   three  block
+```
+
+On a 7×6 board, player 1 has `1 1 1 .` in the bottom row.
+
+- Dropping in col 3 completes `1 1 1 1`.
+    
+- That child board is terminal → score = `+7`.
+    
+- All other moves score lower (max run length = 3).
+    
+- `get_best_action` returns col 3.
+    
+
+`eval_count` increases twice per tested column (once in the loop, once in `evaluate_board`).
+
+Scores by column:
+
+```
+utils = [3, 3, 3, 7, 3, 3, 3]
+```
+
+Result: `argmax(utils)` → column 3.
 
 ### Extending the AI
 
