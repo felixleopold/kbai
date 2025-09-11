@@ -85,6 +85,72 @@ height = 6
   - JIT-compiled `_evaluate(player_id, state, winner)`.
   - Returns a large positive/negative score for win/loss, `0` for draw, otherwise the maximum contiguous run length of the current player's discs.
 
+### Internals: board array and move logic
+
+- The board is a `numpy.ndarray` of shape `(width, height)` with integer values: `0` = empty, `1` = player X, `2` = player O.
+- Indexing is column-major first: `state[col, row]`.
+  - Columns increase left → right.
+  - Rows increase top → bottom (`row = 0` is the top, `row = height - 1` is the bottom).
+- A move “drops” to the lowest empty cell in the chosen column.
+  - Mutation: `Board.play(col, player_id)` updates the current board.
+  - Simulation: `Board.get_new_board(col, player_id)` returns a new `Board` with the move applied (original is unchanged).
+
+Example (4×4) — array vs printed board:
+
+```python
+# state[col, row]
+state = np.array([
+    [0, 0, 1, 1],  # col 0 (leftmost)
+    [0, 0, 0, 2],  # col 1
+    [0, 0, 0, 0],  # col 2
+    [0, 0, 0, 0],  # col 3 (rightmost)
+])
+```
+
+Printed board (`__str__`), rows top→bottom:
+
+```
+ ---  ---  ---  --- 
+|   |   |   |   |
+ ---  ---  ---  --- 
+|   |   |   |   |
+ ---  ---  ---  --- 
+| X |   |   |   |
+ ---  ---  ---  --- 
+| X | O |   |   |
+ ===  ===  ===  === 
+| 1 | 2 | 3 | 4 |
+```
+
+Validity check: a column is valid iff its top cell is empty: `Board.is_valid(col) == (state[col, 0] == 0)`.
+
+### Internals: win detection (app.winning)
+
+`winning(state, game_n)` is Numba-jitted and returns:
+- `1` or `2` if that player has `game_n` connected;
+- `-1` if the board is full (draw);
+- `0` otherwise.
+
+Checks performed:
+- Vertical: scan each column bottom→top, counting consecutive equal non-zero cells. Early break on the first empty because gravity forbids gaps below.
+- Horizontal: scan each row left→right, resetting count on `0`.
+- Diagonals:
+  - Ascending (`/`): from bottom-left toward top-right, using indices `(i + x, j' - x)`.
+  - Descending (`\`): from top-left toward bottom-right, using indices `(i' - x, j' - x)`.
+- Draw: `np.all(state[:, 0])` — if the top row is full across all columns, the board is full.
+
+Time complexity is linear in the number of cells for each pass; with Numba, it is fast enough for interactive play and heuristic evaluation.
+
+### Internals: heuristic scoring
+
+- Terminal states are scored immediately:
+  - Win for `player_id` → `+max(width, height)`
+  - Loss → `-max(width, height)`
+  - Draw → `0`
+- Non-terminal: score is the maximum contiguous run length of `player_id` across all directions in `state`.
+- `Heuristic.get_best_action` evaluates each valid column once by simulating a drop with `Board.get_new_board` and calling `evaluate_board`.
+- `Heuristic.eval_count` tracks total evaluations (reported after each game).
+
 ### Extending the AI
 
 Use `board.get_new_board(col, player_id)` to expand a game tree without mutating the current node. At leaf nodes or when a terminal state is detected (via `Heuristic.winning(state, game_n)`/`app.winning`), score with `heuristic.evaluate_board(player_id, board)`.
