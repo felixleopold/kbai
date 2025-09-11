@@ -6,6 +6,9 @@ import numpy as np
 from numba import jit
 
 
+def clear_screen():
+        print("\033c", end="") #end="" to not print a newline
+
 def start_game(game_n: int, board: Board, players: List[PlayerController]) -> int:
     """Starting a game and handling the game logic
 
@@ -23,6 +26,7 @@ def start_game(game_n: int, board: Board, players: List[PlayerController]) -> in
 
     # Main game loop
     while winner == 0:
+        clear_screen()
         current_player: PlayerController = players[current_player_index]
         move: int = current_player.make_move(board)
 
