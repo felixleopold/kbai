@@ -143,12 +143,34 @@ def get_players(game_n: int) -> List[PlayerController]:
     heuristic1: Heuristic = SimpleHeuristic(game_n)
     heuristic2: Heuristic = SimpleHeuristic(game_n)
 
-    human1: PlayerController = HumanPlayer(1, game_n, heuristic1)
-    human2: PlayerController = HumanPlayer(2, game_n, heuristic2)
+    #Player VS Player
+    #human1: PlayerController = HumanPlayer(1, game_n, heuristic1)
+    #human2: PlayerController = HumanPlayer(2, game_n, heuristic2)
+    #players: List[PlayerController] = [human1, human2]
 
     # TODO: Implement other PlayerControllers (MinMaxPlayer and AlphaBetaPlayer)
 
-    players: List[PlayerController] = [human1, human2]
+    #Player VS AI(Minimax)
+    #h1 = SimpleHeuristic(game_n)
+    #h2 = SimpleHeuristic(game_n)
+    #p1 = HumanPlayer(1, game_n, heuristic1)
+    #p2 = MinMaxPlayer(2, game_n, depth=6, heuristic=h2)
+    #players : List[PlayerController] = [p1,p2]
+
+    #Player VS AI(Alpha-Beta)
+    #h1 = SimpleHeuristic(game_n)
+    #h2 = SimpleHeuristic(game_n)
+    #p1 = HumanPlayer(1, game_n, heuristic1)
+    #p2 = AlphaBetaPlayer(2, game_n, depth=6, heuristic=h2)
+    #players : List[PlayerController] = [p1,p2]
+
+    #AI(Minimax) VS AI(Alpha-Beta)
+    h1 = SimpleHeuristic(game_n)
+    h2 = SimpleHeuristic(game_n)
+    p1 = MinMaxPlayer(1, game_n, depth=6, heuristic=h1)
+    p2 = AlphaBetaPlayer(2, game_n, depth=6, heuristic=h2)
+    players : List[PlayerController] = [p1,p2]
+
 
     assert players[0].player_id in {1, 2}, 'The player_id of the first player must be either 1 or 2'
     assert players[1].player_id in {1, 2}, 'The player_id of the second player must be either 1 or 2'

@@ -69,7 +69,7 @@ class MinMaxPlayer(PlayerController):
         self.depth: int = depth
 
 
-    def make_move(self, board: Board) -> int:
+    def make_move_old(self, board: Board) -> int:
         """Gets the column for the player to play in
 
         Args:
@@ -91,6 +91,7 @@ class MinMaxPlayer(PlayerController):
                 new_board: Board = board.get_new_board(col, self.player_id)
                 value: int = self.heuristic.evaluate_board(self.player_id, new_board)
                 if value > max_value:
+                    max_value = value
                     max_move = col
 
         # This returns the same as
@@ -101,6 +102,77 @@ class MinMaxPlayer(PlayerController):
         # Then, use the minmax algorithm to search through this tree to find the best move/action to take!
 
         return max_move
+    
+    #Start Code
+    #New make_move func for Minimax
+    def make_move(self, board: Board) -> int:
+
+        score, col_number = self.minimax(board,self.depth, True)
+
+        return col_number
+    
+    #Recursive func
+    def minimax(self,board:Board, depth:int, maxmizing:bool):
+
+        #Base case
+        if depth == 0:
+            return self.heuristic.evaluate_board(self.player_id, board), None
+        elif self.heuristic.winning(board.get_board_state() ,self.game_n) != 0:
+            return self.heuristic.evaluate_board(self.player_id, board), None
+        
+        #MaxCase
+        if maxmizing == True:
+            #Reuse example of code abobe
+
+            #Max sets -∞
+            new_score : float = -np.inf
+            #Initialize column
+            new_col : int = 0
+
+            for col in range(board.width):
+                if board.is_valid(col):
+
+                    #Create new child node
+                    child_board: Board = board.get_new_board(col, self.player_id)
+                    #Enter recursion process
+                    child_score, _ = self.minimax(child_board, depth -1, False)
+
+                    #Compare the latest and biggest scores
+                    #if child score is bigger, update score and column number
+                    if child_score > new_score:
+                        new_score = child_score
+                        new_col = col
+
+        
+        #MiniCase
+        elif maxmizing == False:
+
+            #Max sets +∞
+            new_score : float = np.inf
+            #Initialize column
+            new_col : int = 0
+
+            for col in range(board.width):
+                
+                if board.is_valid(col):
+
+                    #Opponent id setting
+                    if self.player_id == 1:
+                        opponent_id : int = 2
+                    else:
+                        opponent_id : int = 1
+                        
+                    child_board: Board = board.get_new_board(col, opponent_id)
+
+                    child_score, _ = self.minimax(child_board,depth -1, True)
+
+                    if child_score < new_score:
+                        new_score = child_score
+                        new_col = col
+
+        #return result
+        return new_score, new_col
+
     
 
 class AlphaBetaPlayer(PlayerController):
@@ -130,7 +202,88 @@ class AlphaBetaPlayer(PlayerController):
         """
 
         # TODO: implement minmax algorithm with alpha beta pruning!
-        return 0
+        #Start Code
+        score, col_number = self.alphabeta(board,self.depth, True, -np.inf, np.inf )
+
+        return col_number
+    
+    def alphabeta(self, board:Board, depth:int,maxmizing:bool, alpha:float, beta:float):
+        
+        #Base case (Same as Minimax)
+        if depth == 0:
+            return self.heuristic.evaluate_board(self.player_id, board), None
+        elif self.heuristic.winning(board.get_board_state() ,self.game_n) != 0:
+            return self.heuristic.evaluate_board(self.player_id, board), None
+        
+        #MaxCase(Reuse MinMaxfunc)
+        if maxmizing == True:
+
+            #Max sets -∞
+            new_score : float = -np.inf
+            #Initialize column
+            new_col : int = 0
+
+            for col in range(board.width):
+                if board.is_valid(col):
+
+                    #Create new child node
+                    child_board: Board = board.get_new_board(col, self.player_id)
+                    #Enter recursion process
+                    child_score, _ = self.alphabeta(child_board, depth -1, False,alpha,beta)
+
+                    #Compare the latest and biggest scores
+                    #if child score is bigger, update score and column number
+                    if child_score > new_score:
+                        new_score = child_score
+                        new_col = col
+                    
+                    ###Main Alpha-Beta Part###
+                    alpha = max(alpha,new_score)
+
+                    #Pruning
+                    if alpha > beta or alpha==beta:
+                        break
+                #return result
+            return new_score, new_col
+
+
+        
+        #MiniCase(Reuse MinMaxfunc)
+        elif maxmizing == False:
+
+            #Max sets +∞
+            new_score : float = np.inf
+            #Initialize column
+            new_col : int = 0
+
+            for col in range(board.width):
+                
+                if board.is_valid(col):
+
+                    #Opponent id setting
+                    if self.player_id == 1:
+                        opponent_id : int = 2
+                    else:
+                        opponent_id : int = 1
+                        
+                    child_board: Board = board.get_new_board(col, opponent_id)
+
+                    child_score, _ = self.alphabeta(child_board,depth -1, True,alpha,beta)
+
+                    if child_score < new_score:
+                        new_score = child_score
+                        new_col = col
+
+                    ###Main Alpha-Beta Part###
+                    beta = min(beta, new_score)
+
+                    #Pruning
+                    if alpha > beta or alpha==beta:
+                        break
+
+            #return result
+            return new_score, new_col
+
 
 
 class HumanPlayer(PlayerController):
