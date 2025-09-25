@@ -92,6 +92,8 @@ class MinMaxPlayer(PlayerController):
                 value: int = self.heuristic.evaluate_board(self.player_id, new_board)
                 if value > max_value:
                     max_move = col
+                    
+       
 
         # This returns the same as
         self.heuristic.get_best_action(self.player_id, board) # Very useful helper function!
