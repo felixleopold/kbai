@@ -136,14 +136,19 @@ class Board:
 
         output: str = ''
 
+        # ANSI colors for players
+        RED: str = '\033[31m'
+        BLUE: str = '\033[34m'
+        RESET: str = '\033[0m'
+
         for i in range(self.height):
             output += f'\n{divider}\n'
             for j in range(self.width):
                 node: str = ' '
                 if self.board_state[j, i] == 1:
-                    node = 'X'
+                    node = f'{RED}X{RESET}'
                 elif self.board_state[j, i] == 2:
-                    node = 'O'
+                    node = f'{BLUE}O{RESET}'
 
                 output += f'| {node} '
             output += '|'
