@@ -140,15 +140,35 @@ def get_players(game_n: int) -> List[PlayerController]:
     Returns:
         List[PlayerController]: list with two players
     """
+    # Set the type of game here: options are 'human_vs_human', 'human_vs_minmax', 'minmax_vs_minmax', 'human_vs_alphabeta', 'alphabeta_vs_alphabeta', 'minmax_vs_alphabeta'
+    GAME_TYPE = 'minmax_vs_alphabeta'
+
     heuristic1: Heuristic = SimpleHeuristic(game_n)
     heuristic2: Heuristic = SimpleHeuristic(game_n)
 
+    # Define all possible player objects
     human1: PlayerController = HumanPlayer(1, game_n, heuristic1)
     human2: PlayerController = HumanPlayer(2, game_n, heuristic2)
+    minmax1: PlayerController = MinMaxPlayer(1, game_n, 6, heuristic1)
+    minmax2: PlayerController = MinMaxPlayer(2, game_n, 6, heuristic2)
+    alphabeta1: PlayerController = AlphaBetaPlayer(1, game_n, 6, heuristic1)
+    alphabeta2: PlayerController = AlphaBetaPlayer(2, game_n, 6, heuristic2)
 
-    # TODO: Implement other PlayerControllers (MinMaxPlayer and AlphaBetaPlayer)
-
-    players: List[PlayerController] = [human1, human2]
+    # Select players based on GAME_TYPE
+    if GAME_TYPE == 'human_vs_human':
+        players: List[PlayerController] = [human1, human2]
+    elif GAME_TYPE == 'human_vs_minmax':
+        players: List[PlayerController] = [human1, minmax2]
+    elif GAME_TYPE == 'minmax_vs_minmax':
+        players: List[PlayerController] = [minmax1, minmax2]
+    elif GAME_TYPE == 'human_vs_alphabeta':
+        players: List[PlayerController] = [human1, alphabeta2]
+    elif GAME_TYPE == 'alphabeta_vs_alphabeta':
+        players: List[PlayerController] = [alphabeta1, alphabeta2]
+    elif GAME_TYPE == 'minmax_vs_alphabeta':
+        players: List[PlayerController] = [minmax1, alphabeta2]
+    else:
+        raise ValueError(f"Unknown GAME_TYPE: {GAME_TYPE}")
 
     assert players[0].player_id in {1, 2}, 'The player_id of the first player must be either 1 or 2'
     assert players[1].player_id in {1, 2}, 'The player_id of the second player must be either 1 or 2'
@@ -161,8 +181,8 @@ def get_players(game_n: int) -> List[PlayerController]:
 
 if __name__ == '__main__':
     game_n: int = 4 # n in a row required to win
-    width: int = 7  # width of the board
-    height: int = 6 # height of the board
+    width: int = 5  # width of the board
+    height: int = 5 # height of the board
 
     # Check whether the game_n is possible
     assert 1 < game_n <= min(width, height), 'game_n is not possible'
