@@ -1,9 +1,30 @@
-from heuristics import Heuristic, SimpleHeuristic, WindowHeuristic
+from heuristics import Heuristic, SimpleHeuristic, AdvancedHeuristic
 from players import PlayerController, HumanPlayer, MinMaxPlayer, AlphaBetaPlayer
 from board import Board
 from typing import List
 import numpy as np
 from numba import jit
+
+# ========================================================================
+#  ▗▄▄▖ ▗▄▖ ▗▖  ▗▖▗▄▄▄▖▗▄▄▄▖ ▗▄▄▖
+# ▐▌   ▐▌ ▐▌▐▛▚▖▐▌▐▌     █  ▐▌   
+# ▐▌   ▐▌ ▐▌▐▌ ▝▜▌▐▛▀▀▘  █  ▐▌▝▜▌
+# ▝▚▄▄▖▝▚▄▞▘▐▌  ▐▌▐▌   ▗▄█▄▖▝▚▄▞▘
+                               
+                               
+                                  
+
+# Game configuration variables
+game_n: int = 4 # n in a row required to win
+width: int = 6  # width of the board
+height: int = 6 # height of the board
+
+# Control randomness in AI moves - when True, always choose the first best move
+FIX_RANDOMNESS = False
+# Set the type of game here: options are 'human_vs_human', 'human_vs_minmax', 'minmax_vs_minmax', 'human_vs_alphabeta', 'alphabeta_vs_alphabeta', 'minmax_vs_alphabeta'
+GAME_TYPE = 'minmax_vs_minmax'
+
+# ========================================================================
 
 
 def clear_screen():
@@ -141,14 +162,12 @@ def get_players(game_n: int) -> List[PlayerController]:
     Returns:
         List[PlayerController]: list with two players
     """
-    # Set the type of game here: options are 'human_vs_human', 'human_vs_minmax', 'minmax_vs_minmax', 'human_vs_alphabeta', 'alphabeta_vs_alphabeta', 'minmax_vs_alphabeta'
-    GAME_TYPE = 'minmax_vs_alphabeta'
 
     heuristic1: Heuristic = SimpleHeuristic(game_n)
     heuristic2: Heuristic = SimpleHeuristic(game_n)
 
-    # heuristic1: Heuristic = WindowHeuristic(game_n)
-    # heuristic2: Heuristic = WindowHeuristic(game_n)
+    # heuristic1: Heuristic = AdvancedHeuristic(game_n)
+    # heuristic2: Heuristic = AdvancedHeuristic(game_n)
 
     # Define all possible player objects
     human1: PlayerController = HumanPlayer(1, game_n, heuristic1)
@@ -156,8 +175,8 @@ def get_players(game_n: int) -> List[PlayerController]:
     minmax1: PlayerController = MinMaxPlayer(1, game_n, 6, heuristic1)
     minmax2: PlayerController = MinMaxPlayer(2, game_n, 6, heuristic2)
     alphabeta1: PlayerController = AlphaBetaPlayer(1, game_n, 6, heuristic1)
-    alphabeta2: PlayerController = AlphaBetaPlayer(2, game_n, 6, heuristic2)
-    # alphabeta2: PlayerController = AlphaBetaPlayer(2, game_n, 8, heuristic2) # since we need to use less evals we can increase the depth to 8. 
+    # alphabeta2: PlayerController = AlphaBetaPlayer(2, game_n, 6, heuristic2)
+    alphabeta2: PlayerController = AlphaBetaPlayer(2, game_n, 6, heuristic2) # since we need to use less evals we can increase the depth to 8. 
     # This gives us an andvantage compared to the minmax player with a similar amount of evals.
 
     # Select players based on GAME_TYPE
@@ -186,10 +205,6 @@ def get_players(game_n: int) -> List[PlayerController]:
 
 
 if __name__ == '__main__':
-    game_n: int = 4 # n in a row required to win
-    width: int = 6  # width of the board
-    height: int = 6 # height of the board
-
     # Check whether the game_n is possible
     assert 1 < game_n <= min(width, height), 'game_n is not possible'
 

@@ -7,6 +7,11 @@ if TYPE_CHECKING:
     from heuristics import Heuristic
     from board import Board
 
+# Import the randomness control flag
+try:    # Try except block is necessary to avoid circular imports
+    from app import FIX_RANDOMNESS
+except ImportError:
+    FIX_RANDOMNESS = False
 
 class PlayerController:
     """Abstract class defining a player
@@ -89,7 +94,7 @@ class MinMaxPlayer(PlayerController):
         for col in range(board.width):
             if board.is_valid(col):
                 new_board: Board = board.get_new_board(col, self.player_id)
-                new_board_eval: int = self.minmax(new_board, self.depth - 1, False)
+                new_board_eval: int = self.minmax(new_board, self.depth, False) # not depth -1 to avoid off-by-one error
                 if new_board_eval > best_value:
                     best_value = new_board_eval
                     best_cols = [col]
@@ -102,8 +107,8 @@ class MinMaxPlayer(PlayerController):
         # Your assignment is to create a data structure (tree) to store the gameboards such that you can evaluate a higher depths.
         # Then, use the minmax algorithm to search through this tree to find the best move/action to take!
 
-        # Randomly select among moves with the best evaluation to avoid left-bias
-        return random.choice(best_cols)
+        # Select among moves with the best evaluation - either randomly or deterministically
+        return best_cols[0] if FIX_RANDOMNESS else random.choice(best_cols)
     
     
     # =============================== Helper function ===============================
@@ -252,7 +257,7 @@ class AlphaBetaPlayer(PlayerController):
         for col in range(board.width):
             if board.is_valid(col):
                 new_board: Board = board.get_new_board(col, self.player_id)
-                new_board_eval: int = self.alphabeta(new_board, self.depth - 1, False, -np.inf, np.inf)
+                new_board_eval: int = self.alphabeta(new_board, self.depth, False, -np.inf, np.inf)
                 if new_board_eval > best_value:
                     best_value = new_board_eval
                     best_cols = [col]
@@ -265,8 +270,8 @@ class AlphaBetaPlayer(PlayerController):
         # Your assignment is to create a data structure (tree) to store the gameboards such that you can evaluate a higher depths.
         # Then, use the minmax algorithm to search through this tree to find the best move/action to take!
 
-        # Randomly select among moves with the best evaluation to avoid left-bias
-        return random.choice(best_cols)
+        # Select among moves with the best evaluation - either randomly or deterministically
+        return best_cols[0] if FIX_RANDOMNESS else random.choice(best_cols)
     
     
     # =============================== Helper function ===============================
