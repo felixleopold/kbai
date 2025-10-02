@@ -1,6 +1,7 @@
 from __future__ import annotations
 from abc import abstractmethod
 import numpy as np
+import random
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from heuristics import Heuristic
@@ -82,16 +83,18 @@ class MinMaxPlayer(PlayerController):
         # TODO: implement minmax algortihm!
         # INT: use the functions on the 'board' object to produce a new board given a specific move
         # HINT: use the functions on the 'heuristic' object to produce evaluations for the different board states!
-        
+
         best_value: float = -np.inf # negative infinity
-        best_move: int = 0
+        best_cols: list[int] = [] # add best moves to a list and choose randomly to avoid left-bias
         for col in range(board.width):
             if board.is_valid(col):
                 new_board: Board = board.get_new_board(col, self.player_id)
                 new_board_eval: int = self.minmax(new_board, self.depth - 1, False)
                 if new_board_eval > best_value:
                     best_value = new_board_eval
-                    best_move = col
+                    best_cols = [col]
+                elif new_board_eval == best_value:
+                    best_cols.append(col)
 
         # This returns the same as
         self.heuristic.get_best_action(self.player_id, board) # Very useful helper function!
@@ -99,7 +102,8 @@ class MinMaxPlayer(PlayerController):
         # Your assignment is to create a data structure (tree) to store the gameboards such that you can evaluate a higher depths.
         # Then, use the minmax algorithm to search through this tree to find the best move/action to take!
 
-        return best_move
+        # Randomly select among moves with the best evaluation to avoid left-bias
+        return random.choice(best_cols)
     
     
     # =============================== Helper function ===============================
@@ -244,14 +248,16 @@ class AlphaBetaPlayer(PlayerController):
         # TODO: implement minmax algorithm with alpha beta pruning!
 
         best_value: float = -np.inf # negative infinity
-        best_move: int = 0
+        best_cols: list[int] = []
         for col in range(board.width):
             if board.is_valid(col):
                 new_board: Board = board.get_new_board(col, self.player_id)
                 new_board_eval: int = self.alphabeta(new_board, self.depth - 1, False, -np.inf, np.inf)
                 if new_board_eval > best_value:
                     best_value = new_board_eval
-                    best_move = col
+                    best_cols = [col]
+                elif new_board_eval == best_value:
+                    best_cols.append(col)
 
         # This returns the same as
         self.heuristic.get_best_action(self.player_id, board) # Very useful helper function!
@@ -259,7 +265,8 @@ class AlphaBetaPlayer(PlayerController):
         # Your assignment is to create a data structure (tree) to store the gameboards such that you can evaluate a higher depths.
         # Then, use the minmax algorithm to search through this tree to find the best move/action to take!
 
-        return best_move
+        # Randomly select among moves with the best evaluation to avoid left-bias
+        return random.choice(best_cols)
     
     
     # =============================== Helper function ===============================

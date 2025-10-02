@@ -1,4 +1,4 @@
-from heuristics import Heuristic, SimpleHeuristic
+from heuristics import Heuristic, SimpleHeuristic, WindowHeuristic
 from players import PlayerController, HumanPlayer, MinMaxPlayer, AlphaBetaPlayer
 from board import Board
 from typing import List
@@ -26,7 +26,7 @@ def start_game(game_n: int, board: Board, players: List[PlayerController]) -> in
 
     # Main game loop
     while winner == 0:
-        clear_screen()
+        clear_screen() # clear screen before showing the new board
         current_player: PlayerController = players[current_player_index]
         move: int = current_player.make_move(board)
 
@@ -36,7 +36,8 @@ def start_game(game_n: int, board: Board, players: List[PlayerController]) -> in
         current_player_index = 1 - current_player_index
         winner = winning(board.get_board_state(), game_n)
 
-    # Printing out winner, final board and number of evaluations after the game 
+    # Printing out winner, final board and number of evaluations after the game
+    clear_screen() # clear screen before showing the final board
     print(board)
 
     if winner < 0:
@@ -146,6 +147,9 @@ def get_players(game_n: int) -> List[PlayerController]:
     heuristic1: Heuristic = SimpleHeuristic(game_n)
     heuristic2: Heuristic = SimpleHeuristic(game_n)
 
+    # heuristic1: Heuristic = WindowHeuristic(game_n)
+    # heuristic2: Heuristic = WindowHeuristic(game_n)
+
     # Define all possible player objects
     human1: PlayerController = HumanPlayer(1, game_n, heuristic1)
     human2: PlayerController = HumanPlayer(2, game_n, heuristic2)
@@ -153,6 +157,8 @@ def get_players(game_n: int) -> List[PlayerController]:
     minmax2: PlayerController = MinMaxPlayer(2, game_n, 6, heuristic2)
     alphabeta1: PlayerController = AlphaBetaPlayer(1, game_n, 6, heuristic1)
     alphabeta2: PlayerController = AlphaBetaPlayer(2, game_n, 6, heuristic2)
+    # alphabeta2: PlayerController = AlphaBetaPlayer(2, game_n, 8, heuristic2) # since we need to use less evals we can increase the depth to 8. 
+    # This gives us an andvantage compared to the minmax player with a similar amount of evals.
 
     # Select players based on GAME_TYPE
     if GAME_TYPE == 'human_vs_human':
@@ -181,8 +187,8 @@ def get_players(game_n: int) -> List[PlayerController]:
 
 if __name__ == '__main__':
     game_n: int = 4 # n in a row required to win
-    width: int = 5  # width of the board
-    height: int = 5 # height of the board
+    width: int = 6  # width of the board
+    height: int = 6 # height of the board
 
     # Check whether the game_n is possible
     assert 1 < game_n <= min(width, height), 'game_n is not possible'

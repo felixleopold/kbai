@@ -7,8 +7,8 @@ A simple, typed Python implementation of Four in a Row (Connect-N) with a plugga
 - **Python**: 3.10+ recommended. Create a virtual environment, then install deps.
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
+python3.12 -m venv .venv
+source .venv/bin/activate  
 pip install -r requirements.txt
 python app.py
 ```
