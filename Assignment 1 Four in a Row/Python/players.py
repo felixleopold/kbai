@@ -99,7 +99,7 @@ class MinMaxPlayer(PlayerController):
                     best_cols.append(col)
 
         # This returns the same as
-        self.heuristic.get_best_action(self.player_id, board) # Very useful helper function!
+        # self.heuristic.get_best_action(self.player_id, board) # Very useful helper function!
 
         # Your assignment is to create a data structure (tree) to store the gameboards such that you can evaluate a higher depths.
         # Then, use the minmax algorithm to search through this tree to find the best move/action to take!
@@ -262,7 +262,7 @@ class AlphaBetaPlayer(PlayerController):
                     best_cols.append(col)
 
         # This returns the same as
-        self.heuristic.get_best_action(self.player_id, board) # Very useful helper function!
+        # self.heuristic.get_best_action(self.player_id, board) # Very useful helper function!
 
         # Your assignment is to create a data structure (tree) to store the gameboards such that you can evaluate a higher depths.
         # Then, use the minmax algorithm to search through this tree to find the best move/action to take!
