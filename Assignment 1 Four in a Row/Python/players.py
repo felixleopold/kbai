@@ -7,11 +7,8 @@ if TYPE_CHECKING:
     from heuristics import Heuristic
     from board import Board
 
-# Import the randomness control flag
-try:    # Try except block is necessary to avoid circular imports
-    from app import FIX_RANDOMNESS
-except ImportError:
-    FIX_RANDOMNESS = False
+# Control randomness in AI moves - when True, always choose the first best move
+FIX_RANDOMNESS = True
 
 class PlayerController:
     """Abstract class defining a player

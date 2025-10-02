@@ -19,8 +19,6 @@ game_n: int = 4 # n in a row required to win
 width: int = 6  # width of the board
 height: int = 6 # height of the board
 
-# Control randomness in AI moves - when True, always choose the first best move
-FIX_RANDOMNESS = False
 # Set the type of game here: options are 'human_vs_human', 'human_vs_minmax', 'minmax_vs_minmax', 'human_vs_alphabeta', 'alphabeta_vs_alphabeta', 'minmax_vs_alphabeta'
 GAME_TYPE = 'minmax_vs_minmax'
 
@@ -44,15 +42,37 @@ def start_game(game_n: int, board: Board, players: List[PlayerController]) -> in
     print('Start game!')
     current_player_index: int = 0 # index of the current player in the players list
     winner: int = 0
+    # Track previous turn's evals for each player
+    prev_turn_evals: list[int] = [0, 0]
+    turn_number: int = 1
+    # Lists to store all eval counts per turn for each player
+    player_eval_history: list[list[int]] = [[], []]
 
     # Main game loop
     while winner == 0:
         clear_screen() # clear screen before showing the new board
+        print(board)
+        print("") # Empty line to keep styling consistent
+        # Print current total evals and eval history (skip first turn)
+        if turn_number > 1:
+            for p in players:
+                print(f'Player {p} evaluated a boardstate {p.get_eval_count()} times!')
+            print("") # Empty line to keep styling consistent
+            print(f'Eval history - Player {players[0]}: {player_eval_history[0]}')
+            print(f'Eval history - Player {players[1]}: {player_eval_history[1]}')
+
         current_player: PlayerController = players[current_player_index]
+        before_evals: int = current_player.get_eval_count()
         move: int = current_player.make_move(board)
 
         while not board.play(move, current_player.player_id):
             move = current_player.make_move(board)
+
+        # Store evals used this turn for next turn's display and add to history
+        turn_evals = current_player.get_eval_count() - before_evals
+        prev_turn_evals[current_player_index] = turn_evals
+        player_eval_history[current_player_index].append(turn_evals)
+        turn_number += 1
 
         current_player_index = 1 - current_player_index
         winner = winning(board.get_board_state(), game_n)
@@ -68,6 +88,10 @@ def start_game(game_n: int, board: Board, players: List[PlayerController]) -> in
 
     for p in players:
         print(f'Player {p} evaluated a boardstate {p.get_eval_count()} times!')
+
+    # Print complete eval history for both players
+    print(f'\nEval history - Player {players[0]}: {player_eval_history[0]}')
+    print(f'Eval history - Player {players[1]}: {player_eval_history[1]}')
 
     return winner
 
