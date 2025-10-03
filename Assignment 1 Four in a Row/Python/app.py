@@ -1,28 +1,42 @@
-from heuristics import Heuristic, SimpleHeuristic, AdvancedHeuristic
+from heuristics import Heuristic, SimpleHeuristic, IntermediateHeuristic #, AdvancedHeuristic
 from players import PlayerController, HumanPlayer, MinMaxPlayer, AlphaBetaPlayer
 from board import Board
 from typing import List
 import numpy as np
-from numba import jit
+import time
 
-# ========================================================================
-#  ▗▄▄▖ ▗▄▖ ▗▖  ▗▖▗▄▄▄▖▗▄▄▄▖ ▗▄▄▖
-# ▐▌   ▐▌ ▐▌▐▛▚▖▐▌▐▌     █  ▐▌   
-# ▐▌   ▐▌ ▐▌▐▌ ▝▜▌▐▛▀▀▘  █  ▐▌▝▜▌
-# ▝▚▄▄▖▝▚▄▞▘▐▌  ▐▌▐▌   ▗▄█▄▖▝▚▄▞▘
-                               
-                               
-                                  
 
-# Game configuration variables
-game_n: int = 4 # n in a row required to win
-width: int = 6  # width of the board
-height: int = 6 # height of the board
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
 
-# Set the type of game here: options are 'human_vs_human', 'human_vs_minmax', 'minmax_vs_minmax', 'human_vs_alphabeta', 'alphabeta_vs_alphabeta', 'minmax_vs_alphabeta'
-GAME_TYPE = 'minmax_vs_minmax'
+# General game settings
+GAME_CONFIG = {
+    'GAME_N': 4,    # N in a row required to win
+    'WIDTH': 6,     # Width of the board
+    'HEIGHT': 6     # Height of the board
+}
 
-# ========================================================================
+# Player X configuration
+PLAYER_X_CONFIG = {
+    'TYPE': 'Minimax',      # Type of Player (Human, Minimax, Alphabeta)
+    'DEPTH': 5,             # If applicable (for Minimax/Alphabeta)
+    'HEURISTIC': 'Intermediate'   # Type of heuristic (Simple, Intermediate)
+}
+
+# Player O configuration
+PLAYER_O_CONFIG = {
+    'TYPE': 'Alphabeta',    # Type of Player (Human, Minimax, Alphabeta)
+    'DEPTH': 7,             # If applicable (for Minimax/Alphabeta)
+    'HEURISTIC': 'Intermediate'   # Type of heuristic (Simple, Intermediate)
+}
+
+CLEAR_SCREEN = False
+
+# Note: You can toggle randomness in players.py to prevent left-bias
+
+# =============================================================================
+
 
 
 def clear_screen():
@@ -39,6 +53,10 @@ def start_game(game_n: int, board: Board, players: List[PlayerController]) -> in
     Returns:
         int: id of the winning player, or -1 if the game ends in a draw
     """
+    RED: str = '\033[31m'
+    BLUE: str = '\033[34m'
+    RESET: str = '\033[0m'
+
     print('Start game!')
     current_player_index: int = 0 # index of the current player in the players list
     winner: int = 0
@@ -50,16 +68,20 @@ def start_game(game_n: int, board: Board, players: List[PlayerController]) -> in
 
     # Main game loop
     while winner == 0:
-        clear_screen() # clear screen before showing the new board
+        if CLEAR_SCREEN:
+            clear_screen() # clear screen before showing the new board
         print(board)
         print("") # Empty line to keep styling consistent
         # Print current total evals and eval history (skip first turn)
         if turn_number > 1:
             for p in players:
-                print(f'Player {p} evaluated a boardstate {p.get_eval_count()} times!')
+                if p.player_id == 1: # If its player X
+                    print(f'Player {RED}{p}{RESET} evaluated a boardstate {RED}{p.get_eval_count()}{RESET} times!')
+                else:
+                    print(f'Player {BLUE}{p}{RESET} evaluated a boardstate {BLUE}{p.get_eval_count()}{RESET} times!')
             print("") # Empty line to keep styling consistent
-            print(f'Eval history - Player {players[0]}: {player_eval_history[0]}')
-            print(f'Eval history - Player {players[1]}: {player_eval_history[1]}')
+            print(f'Eval history - Player {RED}{players[0]}: {player_eval_history[0]}{RESET}')
+            print(f'Eval history - Player {BLUE}{players[1]}: {player_eval_history[1]}{RESET}')
 
         current_player: PlayerController = players[current_player_index]
         before_evals: int = current_player.get_eval_count()
@@ -67,6 +89,10 @@ def start_game(game_n: int, board: Board, players: List[PlayerController]) -> in
 
         while not board.play(move, current_player.player_id):
             move = current_player.make_move(board)
+
+        # Add a small delay to show the move before continuing (increases as game progresses)
+        time.sleep(turn_number * 0.005)
+
 
         # Store evals used this turn for next turn's display and add to history
         turn_evals = current_player.get_eval_count() - before_evals
@@ -78,7 +104,8 @@ def start_game(game_n: int, board: Board, players: List[PlayerController]) -> in
         winner = winning(board.get_board_state(), game_n)
 
     # Printing out winner, final board and number of evaluations after the game
-    clear_screen() # clear screen before showing the final board
+    if CLEAR_SCREEN:
+        clear_screen() # clear screen before showing the final board
     print(board)
 
     if winner < 0:
@@ -87,16 +114,18 @@ def start_game(game_n: int, board: Board, players: List[PlayerController]) -> in
         print(f'Player {current_player} won!')
 
     for p in players:
-        print(f'Player {p} evaluated a boardstate {p.get_eval_count()} times!')
+        if p.player_id == 1: # If its player X
+            print(f'Player {RED}{p}{RESET} evaluated a boardstate {RED}{p.get_eval_count()}{RESET} times!')
+        else:
+            print(f'Player {BLUE}{p}{RESET} evaluated a boardstate {BLUE}{p.get_eval_count()}{RESET} times!')
 
     # Print complete eval history for both players
-    print(f'\nEval history - Player {players[0]}: {player_eval_history[0]}')
-    print(f'Eval history - Player {players[1]}: {player_eval_history[1]}')
+    print(f'\nEval history - Player {RED}{players[0]}: {player_eval_history[0]}{RESET}')
+    print(f'Eval history - Player {BLUE}{players[1]}: {player_eval_history[1]}{RESET}')
 
     return winner
 
 
-@jit(nopython=True, cache=True)
 def winning(state: np.ndarray, game_n: int) -> int:
     """Determines whether a player has won, and if so, which one
 
@@ -174,11 +203,8 @@ def winning(state: np.ndarray, game_n: int) -> int:
     return 0 # Game is not over 
     
 
-def get_players(game_n: int) -> List[PlayerController]:
-    """Gets the two players
-
-    Args:
-        game_n (int): n in a row required to win
+def get_players() -> List[PlayerController]:
+    """Gets the two players based on configuration
 
     Raises:
         AssertionError: if the players are incorrectly initialised
@@ -186,38 +212,37 @@ def get_players(game_n: int) -> List[PlayerController]:
     Returns:
         List[PlayerController]: list with two players
     """
+    game_n = GAME_CONFIG['GAME_N']
 
-    heuristic1: Heuristic = SimpleHeuristic(game_n)
-    heuristic2: Heuristic = SimpleHeuristic(game_n)
+    # Create heuristics based on config
+    def create_heuristic(heuristic_type: str) -> Heuristic:
+        if heuristic_type == 'Simple':
+            return SimpleHeuristic(game_n)
+        elif heuristic_type == 'Intermediate':
+            return IntermediateHeuristic(game_n)
+        # elif heuristic_type == 'Advanced':
+        #     return AdvancedHeuristic(game_n)
+        else:
+            raise ValueError(f"Unknown heuristic type: {heuristic_type}")
 
-    # heuristic1: Heuristic = AdvancedHeuristic(game_n)
-    # heuristic2: Heuristic = AdvancedHeuristic(game_n)
+    # Create players based on config
+    def create_player(player_id: int, config: dict) -> PlayerController:
+        player_type = config['TYPE']
+        depth = config['DEPTH']
 
-    # Define all possible player objects
-    human1: PlayerController = HumanPlayer(1, game_n, heuristic1)
-    human2: PlayerController = HumanPlayer(2, game_n, heuristic2)
-    minmax1: PlayerController = MinMaxPlayer(1, game_n, 6, heuristic1)
-    minmax2: PlayerController = MinMaxPlayer(2, game_n, 6, heuristic2)
-    alphabeta1: PlayerController = AlphaBetaPlayer(1, game_n, 6, heuristic1)
-    # alphabeta2: PlayerController = AlphaBetaPlayer(2, game_n, 6, heuristic2)
-    alphabeta2: PlayerController = AlphaBetaPlayer(2, game_n, 6, heuristic2) # since we need to use less evals we can increase the depth to 8. 
-    # This gives us an andvantage compared to the minmax player with a similar amount of evals.
+        if player_type == 'Human':
+            return HumanPlayer(player_id, game_n, create_heuristic(config['HEURISTIC']))
+        elif player_type == 'Minimax':
+            return MinMaxPlayer(player_id, game_n, depth, create_heuristic(config['HEURISTIC']))
+        elif player_type == 'Alphabeta':
+            return AlphaBetaPlayer(player_id, game_n, depth, create_heuristic(config['HEURISTIC']))
+        else:
+            raise ValueError(f"Unknown player type: {player_type}")
 
-    # Select players based on GAME_TYPE
-    if GAME_TYPE == 'human_vs_human':
-        players: List[PlayerController] = [human1, human2]
-    elif GAME_TYPE == 'human_vs_minmax':
-        players: List[PlayerController] = [human1, minmax2]
-    elif GAME_TYPE == 'minmax_vs_minmax':
-        players: List[PlayerController] = [minmax1, minmax2]
-    elif GAME_TYPE == 'human_vs_alphabeta':
-        players: List[PlayerController] = [human1, alphabeta2]
-    elif GAME_TYPE == 'alphabeta_vs_alphabeta':
-        players: List[PlayerController] = [alphabeta1, alphabeta2]
-    elif GAME_TYPE == 'minmax_vs_alphabeta':
-        players: List[PlayerController] = [minmax1, alphabeta2]
-    else:
-        raise ValueError(f"Unknown GAME_TYPE: {GAME_TYPE}")
+    player1 = create_player(1, PLAYER_X_CONFIG)
+    player2 = create_player(2, PLAYER_O_CONFIG)
+
+    players = [player1, player2]
 
     assert players[0].player_id in {1, 2}, 'The player_id of the first player must be either 1 or 2'
     assert players[1].player_id in {1, 2}, 'The player_id of the second player must be either 1 or 2'
@@ -230,8 +255,31 @@ def get_players(game_n: int) -> List[PlayerController]:
 
 if __name__ == '__main__':
     # Check whether the game_n is possible
+    game_n = GAME_CONFIG['GAME_N']
+    width = GAME_CONFIG['WIDTH']
+    height = GAME_CONFIG['HEIGHT']
     assert 1 < game_n <= min(width, height), 'game_n is not possible'
 
     board: Board = Board(width, height)
-    start_game(game_n, board, get_players(game_n))
+    
+
+    # # ========================================
+    # # START DEBUG (remove)
+    # # ========================================
+
+    # board_array = np.array([
+    #     [0, 0, 0, 0, 1, 1],  # Column 1 
+    #     [0, 0, 0, 0, 0, 0],  # Column 2
+    #     [0, 0, 0, 0, 0, 2],  # Column 3 
+    #     [0, 0, 0, 0, 0, 2],  # Column 4
+    #     [0, 0, 0, 0, 0, 2],  # Column 5
+    #     [0, 0, 0, 0, 0, 1],  # Column 6
+    # ])
+    # board = Board(board_array)
+
+    # # ========================================
+    # # END DEBUG
+    # # ========================================
+
+    start_game(game_n, board, get_players())
     

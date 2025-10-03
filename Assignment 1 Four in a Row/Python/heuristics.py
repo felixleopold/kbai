@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from abc import abstractmethod
-from numba import jit
+# from numba import jit
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from board import Board
@@ -38,7 +38,21 @@ class Heuristic:
                 utils[i] = self.evaluate_board(player_id, board.get_new_board(i, player_id))
 
         return np.argmax(utils)
-    
+
+    def get_tactical_action(self, player_id: int, board: "Board") -> int:
+        """Optional tactical hook (default: none).
+
+        Allows search players to ask the heuristic for immediate tactical moves
+        like one-ply win or block. Base implementation returns -1 (no tactic).
+
+        Args:
+            player_id: current player id
+            board: current board
+
+        Returns:
+            int: column index for a tactical move, or -1 if none
+        """
+        return -1
 
     def evaluate_board(self, player_id: int, board: Board) -> int:
         """Helper function to assign a utility to a board
@@ -124,7 +138,7 @@ class SimpleHeuristic(Heuristic):
     
     
     @staticmethod
-    @jit(nopython=True, cache=True)
+    # @jit(nopython=True, cache=True)
     def _evaluate(player_id: int, state: np.ndarray, winner: int) -> int:
         """Determine utility of a board state
 
@@ -174,7 +188,7 @@ class SimpleHeuristic(Heuristic):
                     else:
                         break
 
-                for a in range(1, min(width - i, j)):
+                for a in range(1, min(width - i, j + 1)): # off by one error here
                     if state[i + a, j - a] == player_id:
                         max_in_row = max(max_in_row, a + 1)
                     else:
@@ -182,9 +196,9 @@ class SimpleHeuristic(Heuristic):
 
         return max_in_row
 
-# Testing Heuristic
-class AdvancedHeuristic(Heuristic):
-    """A advanced heuristic
+
+class IntermediateHeuristic(Heuristic):
+    """A simple heuristic
     Inherits from Heuristic
     """
     def __init__(self, game_n: int) -> None:
@@ -198,13 +212,35 @@ class AdvancedHeuristic(Heuristic):
     def _name(self) -> str:
         """
         Returns:
-            str: the name of the heuristic; Advanced
+            str: the name of the heuristic; Intermediate
         """
-        return 'Advanced'
-    
-    
+        return 'Intermediate'
+
+    def get_tactical_action(self, player_id: int, board: "Board") -> int:
+        """Try an immediate win; otherwise block opponent's immediate win.
+
+        Returns the column index or -1 if no tactic applies.
+        """
+        # 1) Play immediate win if available
+        for col in range(board.width):
+            if board.is_valid(col):
+                next_board = board.get_new_board(col, player_id)
+                if self.winning(next_board.get_board_state(), self.game_n) == player_id:
+                    return col
+
+        # 2) Block opponent's immediate win if available
+        opp_id: int = 1 if player_id == 2 else 2
+        for col in range(board.width):
+            if board.is_valid(col):
+                opp_board = board.get_new_board(col, opp_id)
+                if self.winning(opp_board.get_board_state(), self.game_n) == opp_id:
+                    return col
+
+        return -1
+
+
     @staticmethod
-    @jit(nopython=True, cache=True)
+    # @jit(nopython=True, cache=True)
     def _evaluate(player_id: int, state: np.ndarray, winner: int) -> int:
         """Determine utility of a board state
 
@@ -221,43 +257,71 @@ class AdvancedHeuristic(Heuristic):
         width, height = state.shape
 
         if winner == player_id: # player won
-            return max(width, height)
+            return 1000000
         elif winner < 0: # draw
             return 0
         elif winner > 0: # player lost
-            return -max(width, height) * 2
-        
-        # not winning or losing, return highest number of claimed squares in a row      
-        max_in_row: int = 0
+            return -1000000
+
+        # not winning or losing, calculate longest chains for both players in one pass
+        player_max: int = 0
+        opp_max: int = 0
+        opp_id: int = 1 if player_id == 2 else 2
+
         for i in range(width):
             for j in range(height):
-                if state[i, j] != player_id:
+                pid = state[i, j]
+                if pid == 0:  # empty cell
                     continue
 
-                max_in_row = max(max_in_row, 1)
+                # Update minimum chain length of 1
+                if pid == player_id:
+                    player_max = max(player_max, 1)
+                elif pid == opp_id:
+                    opp_max = max(opp_max, 1)
 
+                # Check horizontal (right)
                 for x in range(1, width - i):
-                    if state[i + x, j] == player_id:
-                        max_in_row = max(max_in_row, x + 1)
+                    if state[i + x, j] == pid:
+                        chain_len = x + 1
+                        if pid == player_id:
+                            player_max = max(player_max, chain_len)
+                        else:
+                            opp_max = max(opp_max, chain_len)
                     else:
                         break
 
+                # Check vertical (down)
                 for y in range(1, height - j):
-                    if state[i, j + y] == player_id:
-                        max_in_row = max(max_in_row, y + 1)
+                    if state[i, j + y] == pid:
+                        chain_len = y + 1
+                        if pid == player_id:
+                            player_max = max(player_max, chain_len)
+                        else:
+                            opp_max = max(opp_max, chain_len)
                     else:
                         break
 
+                # Check diagonal (down-right)
                 for d in range(1, min(width - i, height - j)):
-                    if state[i + d, j + d] == player_id:
-                        max_in_row = max(max_in_row, d + 1)
+                    if state[i + d, j + d] == pid:
+                        chain_len = d + 1
+                        if pid == player_id:
+                            player_max = max(player_max, chain_len)
+                        else:
+                            opp_max = max(opp_max, chain_len)
                     else:
                         break
 
-                for a in range(1, min(width - i, j)):
-                    if state[i + a, j - a] == player_id:
-                        max_in_row = max(max_in_row, a + 1)
+                # Check anti-diagonal (down-left)
+                for a in range(1, min(width - i, j + 1)):
+                    if state[i + a, j - a] == pid:
+                        chain_len = a + 1
+                        if pid == player_id:
+                            player_max = max(player_max, chain_len)
+                        else:
+                            opp_max = max(opp_max, chain_len)
                     else:
                         break
 
-        return max_in_row
+        return player_max - opp_max

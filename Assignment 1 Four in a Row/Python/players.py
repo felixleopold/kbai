@@ -7,8 +7,18 @@ if TYPE_CHECKING:
     from heuristics import Heuristic
     from board import Board
 
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
 # Control randomness in AI moves - when True, always choose the first best move
-FIX_RANDOMNESS = True
+FIX_RANDOMNESS = False
+
+# =============================================================================
+
+
+
+
 
 class PlayerController:
     """Abstract class defining a player
@@ -82,27 +92,23 @@ class MinMaxPlayer(PlayerController):
             int: column to play in
         """
 
-        # TODO: implement minmax algortihm!
-        # INT: use the functions on the 'board' object to produce a new board given a specific move
-        # HINT: use the functions on the 'heuristic' object to produce evaluations for the different board states!
+        # Tactical pre-check via heuristic (immediate win/block). If none, search.
+        tactical = self.heuristic.get_tactical_action(self.player_id, board)
+        if tactical != -1:
+            return tactical
 
+        # No tactics available, run minimax search
         best_value: float = -np.inf # negative infinity
         best_cols: list[int] = [] # add best moves to a list and choose randomly to avoid left-bias
         for col in range(board.width):
             if board.is_valid(col):
                 new_board: Board = board.get_new_board(col, self.player_id)
-                new_board_eval: int = self.minmax(new_board, self.depth, False) # not depth -1 to avoid off-by-one error
+                new_board_eval: int = self.minmax(new_board, self.depth, False) # not depth -1 to avoid off-by-one error for the depth
                 if new_board_eval > best_value:
                     best_value = new_board_eval
                     best_cols = [col]
                 elif new_board_eval == best_value:
                     best_cols.append(col)
-
-        # This returns the same as
-        # self.heuristic.get_best_action(self.player_id, board) # Very useful helper function!
-
-        # Your assignment is to create a data structure (tree) to store the gameboards such that you can evaluate a higher depths.
-        # Then, use the minmax algorithm to search through this tree to find the best move/action to take!
 
         # Select among moves with the best evaluation - either randomly or deterministically
         return best_cols[0] if FIX_RANDOMNESS else random.choice(best_cols)
@@ -247,8 +253,12 @@ class AlphaBetaPlayer(PlayerController):
             int: column to play in
         """
 
-        # TODO: implement minmax algorithm with alpha beta pruning!
+        # Tactical pre-check via heuristic (immediate win/block). If none, search.
+        tactical = self.heuristic.get_tactical_action(self.player_id, board)
+        if tactical != -1:
+            return tactical
 
+        # No tactics available, run alphabeta search
         best_value: float = -np.inf # negative infinity
         best_cols: list[int] = []
         for col in range(board.width):
@@ -260,12 +270,6 @@ class AlphaBetaPlayer(PlayerController):
                     best_cols = [col]
                 elif new_board_eval == best_value:
                     best_cols.append(col)
-
-        # This returns the same as
-        # self.heuristic.get_best_action(self.player_id, board) # Very useful helper function!
-
-        # Your assignment is to create a data structure (tree) to store the gameboards such that you can evaluate a higher depths.
-        # Then, use the minmax algorithm to search through this tree to find the best move/action to take!
 
         # Select among moves with the best evaluation - either randomly or deterministically
         return best_cols[0] if FIX_RANDOMNESS else random.choice(best_cols)
@@ -422,11 +426,13 @@ class HumanPlayer(PlayerController):
         Returns:
             int: column to play in
         """
-        print(board)
+        # print(board)
 
         if self.heuristic is not None:
             print(f'Heuristic {self.heuristic} calculated the best move is:', end=' ')
             print(self.heuristic.get_best_action(self.player_id, board) + 1, end='\n\n')
+
+        # Placeholder for removed debugg code
 
         col: int = self.ask_input(board)
 
