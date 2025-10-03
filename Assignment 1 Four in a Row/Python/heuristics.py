@@ -40,10 +40,7 @@ class Heuristic:
         return np.argmax(utils)
 
     def get_tactical_action(self, player_id: int, board: "Board") -> int:
-        """Optional tactical hook (default: none).
-
-        Allows search players to ask the heuristic for immediate tactical moves
-        like one-ply win or block. Base implementation returns -1 (no tactic).
+        """Optional tactical check for immediate win or block
 
         Args:
             player_id: current player id
@@ -217,9 +214,9 @@ class IntermediateHeuristic(Heuristic):
         return 'Intermediate'
 
     def get_tactical_action(self, player_id: int, board: "Board") -> int:
-        """Try an immediate win; otherwise block opponent's immediate win.
+        """Try an immediate win otherwise block opponent's immediate win
 
-        Returns the column index or -1 if no tactic applies.
+        Returns the column index or -1 if no tactic applies
         """
         # 1) Play immediate win if available
         for col in range(board.width):

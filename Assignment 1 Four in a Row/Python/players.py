@@ -120,13 +120,13 @@ class MinMaxPlayer(PlayerController):
 
     def _is_terminal(self, board: Board) -> bool:
         """
-        Determines if the given node is a terminal state (win, loss, or draw).
+        Determines if the given node is a terminal state (win, loss, or draw)
 
         Args:
-            board (Board): The current board.
+            board (Board): The current board
 
         Returns:
-            bool: True if the node is terminal, False otherwise.
+            bool: True if the node is terminal, False otherwise
 
         Pseudocode:
             1. Get the current board state as a numpy array and store it in 'state'
@@ -154,12 +154,12 @@ class MinMaxPlayer(PlayerController):
     def minmax(self, board: Board, depth: int, is_maximising: bool) -> int:
         """
         Args:
-            board (Board): The current board.
-            depth (int): The current depth of the search.
-            is_maximising (bool): Whether the current player is maximizing or minimizing.
+            board (Board): The current board
+            depth (int): The current depth of the search
+            is_maximising (bool): Whether the current player is maximizing or minimizing
 
         Returns:
-            int: The best evaluation for the current player.
+            int: The best evaluation for the current player
         """
         # Base case: depth limit reached or terminal state
         # -------------------------------------------------
@@ -281,13 +281,13 @@ class AlphaBetaPlayer(PlayerController):
 
     def _is_terminal(self, board: Board) -> bool:
         """
-        Determines if the given node is a terminal state (win, loss, or draw).
+        Determines if the given node is a terminal state (win, loss, or draw)
 
         Args:
-            board (Board): The current board.
+            board (Board): The current board
 
         Returns:
-            bool: True if the node is terminal, False otherwise.
+            bool: True if the node is terminal, False otherwise
 
         Pseudocode:
             1. Get the current board state as a numpy array and store it in 'state'
