@@ -1,3 +1,7 @@
+# Taro Kinoshita s1140213
+# Felix Mrak s1145815
+
+
 from heuristics import Heuristic, SimpleHeuristic, IntermediateHeuristic #, AdvancedHeuristic
 from players import PlayerController, HumanPlayer, MinMaxPlayer, AlphaBetaPlayer
 from board import Board
@@ -33,7 +37,7 @@ PLAYER_O_CONFIG = {
 
 CLEAR_SCREEN = False
 
-# Note: You can toggle randomness in players.py to prevent left-bias
+# Note: You can toggle randomness in players.py to prevent left bias
 
 # =============================================================================
 
@@ -223,7 +227,7 @@ def get_players() -> List[PlayerController]:
         # elif heuristic_type == 'Advanced':
         #     return AdvancedHeuristic(game_n)
         else:
-            raise ValueError(f"Unknown heuristic type: {heuristic_type}")
+            raise ValueError(f"unknown heuristic type: {heuristic_type}")
 
     # Create players based on config
     def create_player(player_id: int, config: dict) -> PlayerController:
@@ -237,7 +241,7 @@ def get_players() -> List[PlayerController]:
         elif player_type == 'Alphabeta':
             return AlphaBetaPlayer(player_id, game_n, depth, create_heuristic(config['HEURISTIC']))
         else:
-            raise ValueError(f"Unknown player type: {player_type}")
+            raise ValueError(f"unknown player type: {player_type}")
 
     player1 = create_player(1, PLAYER_X_CONFIG)
     player2 = create_player(2, PLAYER_O_CONFIG)

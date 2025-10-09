@@ -225,7 +225,7 @@ class IntermediateHeuristic(Heuristic):
                 if self.winning(next_board.get_board_state(), self.game_n) == player_id:
                     return col
 
-        # 2) Block opponent's immediate win if available
+        # 2) Block opponents immediate win if available
         opp_id: int = 1 if player_id == 2 else 2
         for col in range(board.width):
             if board.is_valid(col):

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 # CONFIGURATION
 # =============================================================================
 
-# Control randomness in AI moves - when True, always choose the first best move
+# Control randomness in AI moves, when True, always choose the first best move
 FIX_RANDOMNESS = False
 
 # =============================================================================
@@ -92,25 +92,25 @@ class MinMaxPlayer(PlayerController):
             int: column to play in
         """
 
-        # Tactical pre-check via heuristic (immediate win/block). If none, search.
+        # Tactical check via heuristic (immediate win/block). If none, search.
         tactical = self.heuristic.get_tactical_action(self.player_id, board)
         if tactical != -1:
             return tactical
 
         # No tactics available, run minimax search
         best_value: float = -np.inf # negative infinity
-        best_cols: list[int] = [] # add best moves to a list and choose randomly to avoid left-bias
+        best_cols: list[int] = [] # add best moves to a list and choose randomly to avoid left bias
         for col in range(board.width):
             if board.is_valid(col):
                 new_board: Board = board.get_new_board(col, self.player_id)
-                new_board_eval: int = self.minmax(new_board, self.depth, False) # not depth -1 to avoid off-by-one error for the depth
+                new_board_eval: int = self.minmax(new_board, self.depth, False) # not depth -1 to avoid off by one error for the depth
                 if new_board_eval > best_value:
                     best_value = new_board_eval
                     best_cols = [col]
                 elif new_board_eval == best_value:
                     best_cols.append(col)
 
-        # Select among moves with the best evaluation - either randomly or deterministically
+        # Select among moves with the best evaluation, either randomly or deterministically
         return best_cols[0] if FIX_RANDOMNESS else random.choice(best_cols)
     
     
@@ -253,7 +253,7 @@ class AlphaBetaPlayer(PlayerController):
             int: column to play in
         """
 
-        # Tactical pre-check via heuristic (immediate win/block). If none, search.
+        # Tactical check via heuristic (immediate win/block). If none, search.
         tactical = self.heuristic.get_tactical_action(self.player_id, board)
         if tactical != -1:
             return tactical
@@ -271,7 +271,7 @@ class AlphaBetaPlayer(PlayerController):
                 elif new_board_eval == best_value:
                     best_cols.append(col)
 
-        # Select among moves with the best evaluation - either randomly or deterministically
+        # Select among moves with the best evaluation, either randomly or deterministically
         return best_cols[0] if FIX_RANDOMNESS else random.choice(best_cols)
     
     
