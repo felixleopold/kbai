@@ -4,6 +4,118 @@ This project demonstrates model-based diagnosis of digital circuits using logica
 
 Note: The hitting set computation is currently a stub in `hittingsets.py` and needs implementation to produce diagnoses. Everything else (conflict set retrieval, game scaffolding, plotting) is complete.
 
+## Table of Contents
+
+- [Assignment overview and how to approach it](#assignment-overview-and-how-to-approach-it)
+- [The hitting set problem](#the-hitting-set-problem)
+- [Key concepts](#key-concepts)
+- [How it works](#how-it-works)
+- [Why it works](#why-it-works)
+- [Repository structure](#repository-structure)
+- [Install](#install)
+- [Usage](#usage)
+- [Circuit file format](#circuit-file-format)
+- [Core modules and APIs](#core-modules-and-apis)
+- [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
+- [Extending](#extending)
+
+## Assignment overview and how to approach it
+
+**Goal**: Develop a thorough understanding of the hitting set algorithm and model-based system diagnosis. Implement the hitting set algorithm discussed in the lectures and apply it to the provided conflict sets. Implement and compare multiple heuristics for building the search tree (at least two).
+
+**What is provided**: This repository already parses circuits, builds Z3 constraints, and computes minimal conflict sets. A scaffold is provided for the hitting set algorithm in `hittingsets.py`. You may modify the provided code, but document any changes in your report.
+
+### Suggested approach
+0. Familiarise yourself with the codebase and the theory.
+   - What are conflict sets? What are hitting sets? How are conflicts generated here?
+   - Run `python main.py` on the example circuits and inspect the printed conflicts.
+   - Read `hittingsets.py` to see where your implementation should go.
+1. Choose a tree/structure for search.
+   - Either implement a straightforward combination search, or Reiter’s HS-Tree.
+   - Decide on an internal representation for nodes/edges and conflict coverage.
+2. Compute all hitting sets.
+   - Ensure every candidate set intersects each conflict set.
+3. Filter to minimal hitting sets.
+   - Remove supersets so only subset-minimal diagnoses remain.
+4. Implement at least two heuristics for tree construction/expansion and compare.
+   - Examples: choose the smallest conflict first; pick the most frequent component first; breadth-first vs depth-first expansion; cost-based component ordering.
+   - Discuss the effect on correctness and runtime (time and/or node expansions).
+
+Bonus: Create additional circuits and test more than two heuristics for extra credit (see grading sheet).
+
+### Constraints
+- Do not use external libraries to implement the hitting set algorithm (no NumPy, Pandas, PySAT, etc.).
+- For collecting conflict sets you may use `z3-solver` (already included).
+- Standard library usage is allowed (e.g., `itertools`, `collections`, `queue`, `random`).
+
+### Report and submission
+- Write a formal scientific report (≈4–8 pages, excluding appendices) describing your approach, implementation, heuristics, experiments, results, and conclusions. Follow the course guide’s “writing a programming report” and the assignment’s assessment form.
+- Submit both: (1) the PDF report and (2) the code (zip). Include your name(s), student number(s), course, assignment, and date in both.
+- Deadlines and contact information are communicated via Brightspace and the course manual.
+
+## The hitting set problem
+
+**Definition**: Given a universe `U` and a family of sets `C = {C₁, C₂, …, Cₖ}` with `Cᵢ ⊆ U`, a set `H ⊆ U` is a hitting set if `H ∩ Cᵢ ≠ ∅` for every `i`. A hitting set is **minimal** if no proper subset of it is also a hitting set.
+
+In model-based diagnosis, `U` is the set of components, and `C` is the collection of (minimal) conflict sets. A diagnosis is exactly a hitting set of the conflict sets, and a minimal diagnosis is a minimal hitting set.
+
+**Example**: Let `C = {{A, B}, {B, C}}` over `U = {A, B, C}`.
+- Hitting sets include `{B}`, `{A, C}`, `{A, B}`, `{B, C}`, `{A, B, C}`.
+- Minimal hitting sets are `{B}` and `{A, C}`.
+
+**Complexity**: Deciding whether a hitting set of size ≤ `k` exists is NP-complete, and the number of minimal hitting sets can be exponential. For small circuits and few conflicts, enumeration is practical.
+
+### How to solve it
+
+1) Brute force over combinations (simple and fine for teaching/small inputs):
+- Enumerate combinations of components in increasing size.
+- Keep those that intersect every conflict set.
+- Filter to minimal sets by removing any set that strictly contains another solution.
+
+2) Reiter’s HS-Tree (systematic and scalable with pruning):
+- Maintain a search tree where each node corresponds to a candidate hitting set `S(n)` (the set of edge labels on the path).
+- If `S(n)` hits all conflicts, mark it as a (minimal) diagnosis leaf (BFS ensures minimality by cardinality/cost).
+- Otherwise select an uncovered conflict `C` and expand a child for each `c ∈ C` by adding an edge labelled `c` (so child path is `S(n) ∪ {c}`).
+- Pruning rules:
+  - If `S(n)` is a superset of an already found diagnosis, prune (`superset check`).
+  - Avoid duplicate elements along a path.
+  - Use only minimal conflict sets as input to avoid redundant branches and ensure minimal diagnoses.
+- Heuristics to reduce search:
+  - Select the smallest conflict first.
+  - Order components by frequency across conflicts (most frequent first).
+  - Use BFS for cardinality-minimal diagnoses first, or cost-based priority if components have costs.
+
+Implementation tip: For this assignment, a correct and readable brute-force enumerator with a clean minimality filter is sufficient. If you implement HS-Tree, add clear pruning and ordering heuristics and compare runtime/expansions.
+
+![Example hitting set tree](assets/KBAI_Hitting_Set_Example.png)
+
+#### HS-Tree in 6 steps (concise)
+
+1. Select root conflict:
+   Choose a conflict set to start with (commonly the smallest by cardinality) and use its elements to create the first-level branches.
+2. Expand nodes:
+   For each element in the current conflict set, create a branch (edge) labelled with that element; the node’s path labels form the candidate set `S`.
+3. Select next conflict:
+   At each node, pick a conflict set that is not yet hit by `S` (i.e., `S ∩ C = ∅`).
+4. Continue expansion:
+   Expand children for each element of this new conflict and repeat until all conflicts are intersected by `S`.
+5. Collect hitting sets:
+   Every root-to-leaf path whose `S` hits all conflicts is a diagnosis (use BFS/cost-ordering to obtain minimal ones first, otherwise filter later).
+6. Minimise:
+   Remove any diagnosis that is a strict superset of another to obtain minimal hitting sets only.
+
+Pruning notes: prune any node whose `S` is a superset of an already found diagnosis; avoid repeating the same element along a path; always use minimal conflict sets.
+
+## Key concepts
+
+- **Component (fault flag)**: Boolean variable indicating whether a component’s behaviour is constrained (`False` = healthy) or unconstrained (`True` = potentially faulty).
+- **Conflict set**: A set of components that cannot all be healthy given the observations (assuming they are all healthy makes the model UNSAT).
+- **Minimal conflict set**: A conflict set with no proper subset that is also a conflict.
+- **Hitting set / Diagnosis**: A set of components that intersects every minimal conflict set; corresponds to a hypothesis about faulty components.
+- **Minimal diagnosis**: A diagnosis with no proper subset that is also a diagnosis; preferred by parsimony.
+- **Soundness & completeness**: Using minimal conflict sets and exhaustive search or an HS-Tree with correct pruning yields exactly the minimal diagnoses.
+
 ## How it works
 
 - **Model-based diagnosis**: A system is modeled with components that may be healthy or faulty. Observations about inputs and outputs are provided. If assuming a set of components are healthy leads to contradiction with the observations, that set is a conflict set. A diagnosis is a set of components that intersects every conflict set (a hitting set). Minimal diagnoses correspond to minimal hitting sets.
@@ -169,6 +281,12 @@ def run_hitting_set_algorithm(conflict_sets):
 
 - `plot_circuit(document)`: Dispatches to `plot_circuit_1` … `plot_circuit_7` based on filename.
 - Each plot function draws a schematic consistent with its corresponding circuit file and opens `.circuit.svg` in a browser.
+
+To open the circuit in a browser:
+```
+open -a "Zen Browser" .circuit.svg
+open -a "Google Chrome" .circuit.svg
+```
 
 ## Examples
 
