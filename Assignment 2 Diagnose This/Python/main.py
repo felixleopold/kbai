@@ -12,7 +12,7 @@ from os.path import join
 ALGORITHM = "brute_force"
 
 # Document options: "circuit1.txt", "circuit2.txt", "circuit3.txt", etc.
-DOCUMENT = "circuit1.txt"
+DOCUMENT = "circuit7.txt"
 
 # # Heuristic options: "smallest", "most_frequent", "random"
 # HEURISTIC = "smallest"
