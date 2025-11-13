@@ -70,10 +70,10 @@ max_nodes = max(r['nodes_visited'] for r in results.values())
 diff = max_nodes - min_nodes
 diff_percent = (diff / min_nodes * 100) if min_nodes > 0 else 0
 
-print(f"\n→ Variation: {diff} nodes ({diff_percent:.1f}% difference)")
+print(f"\n-> Variation: {diff} nodes ({diff_percent:.1f}% difference)")
 
 if diff_percent < 10:
-    print("  ⚠️  Small difference")
+    print("  ∆  Small difference")
 elif diff_percent < 30:
     print("  ✓  Moderate difference")
 else:
