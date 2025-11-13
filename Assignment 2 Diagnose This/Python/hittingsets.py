@@ -1,4 +1,6 @@
 import itertools
+import random
+import time
 
 from z3 import K
 
@@ -22,13 +24,13 @@ class HSNode:
         self.is_solution = is_solution
         # children
 
-    def create_children(self, conflict_set: list[str]) -> list['HSNode']:
+    def create_children(self, selected_conflict_set: list[str]) -> list['HSNode']:
         """
         Create child nodes for each component in the conflict set.
         Only creates children for components not already in the path.
         """
         children = []
-        for component in conflict_set:
+        for component in selected_conflict_set:
             if component not in self.path_labels:
                 children.append(HSNode(self.path_labels + [component], False))
         return children
@@ -50,7 +52,10 @@ def hits_conflict(path_labels: list[str], conflict_set: list[str]) -> bool:
     Returns:
     True if path_labels intersects conflict_set, False otherwise
     """
-    return any(component in conflict_set for component in path_labels)
+    for component in path_labels:
+        if component in conflict_set:
+            return True
+    return False
 
 
 def get_uncovered_conflicts(path_labels: list[str], conflict_sets: list[list[str]]) -> list[list[str]]:
@@ -66,28 +71,88 @@ def get_uncovered_conflicts(path_labels: list[str], conflict_sets: list[list[str
             uncovered.append(conflict)
     return uncovered
 
+
+def get_minimal_hitting_sets(hitting_sets: list[list[str]]) -> list[list[str]]:
+    """
+    Filter hitting sets to only include minimal hitting sets.
+    A minimal hitting set is one that has no strict subset that is also a hitting set.
+    
+    Parameters:
+    hitting_sets: List of all hitting sets
+    
+    Returns:
+    List of minimal hitting sets (supersets removed)
+    """
+    minimal_hitting_sets = []
+    for hitting_set in hitting_sets:
+        is_minimal = True
+        hitting_set_set = set(hitting_set)
+        
+        # Check if any other hitting set is a strict subset
+        for others in hitting_sets:
+            others_set = set(others)
+            if others_set < hitting_set_set:  # Strict subset
+                is_minimal = False
+                break
+        
+        if is_minimal:
+            minimal_hitting_sets.append(hitting_set)
+    
+    return minimal_hitting_sets
+
 # ------------------------------------------HEURISTICS-----------------------------------------------
 
 def select_smallest_conflict(uncovered_conflicts: list[list[str]]) -> list[str]:
     """
-    Heuristic: Select the conflict with the fewest components.
+    Heuristic: Select the conflict with the fewest components
     This minimizes the branching factor.
     """
     return min(uncovered_conflicts, key=len)
 
-def select_random_conflict():
-    return
 
-# Map heuristic names to functions
+def select_random_conflict(uncovered_conflicts: list[list[str]]) -> list[str]:
+    """
+    Heuristic: Select a random conflict from the uncovered conflicts
+    Useful for baseline comparison
+    """
+    return random.choice(uncovered_conflicts)
+
+
+def select_most_frequent_component_conflict(uncovered_conflicts: list[list[str]]) -> list[str]:
+    """
+    Heuristic: Select the conflict with the most frequent component from all uncovered conflicts
+    
+    Idea: Components appearing in many conflicts are more likely to be part of minimal hitting sets
+    """
+    # Count how often each component appears in all uncovered conflicts
+    component_counts = {}
+    for conflict in uncovered_conflicts:
+        for component in conflict:
+            component_counts[component] = component_counts.get(component, 0) + 1
+    
+    # Find the most frequent component
+    most_frequent_component = max(component_counts, key=component_counts.get)
+    
+    # Find conflicts with the most frequent component
+    conflicts_with_most_frequent = [conflict for conflict in uncovered_conflicts if most_frequent_component in conflict]
+    
+    # Return the smallest of the conflicts found
+    return min(conflicts_with_most_frequent, key=len)
+
+
+# Heuristic names to functions
 HEURISTICS = {
     "smallest": select_smallest_conflict,
-    # "most_frequent": select_most_frequent_component_conflict,
-    # "random": select_random_conflict
+    "most_frequent": select_most_frequent_component_conflict,
+    "random": select_random_conflict
 }
 
 # -------------------------------------------HS TREE------------------------------------------------
 
-def hs_tree_recursive(node: HSNode, conflict_sets: list[list[str]], solutions: list[list[str]], heuristic_func) -> None:
+def hs_tree_recursive(node: HSNode, conflict_sets: list[list[str]], solutions: list[list[str]], heuristic_func, visit_count: list[int]) -> None:
+
+        # Count every node visit (includes solutions, pruned nodes, and expanded nodes)
+        visit_count[0] += 1
 
         uncovered_conflicts = get_uncovered_conflicts(node.path_labels, conflict_sets)
 
@@ -107,7 +172,7 @@ def hs_tree_recursive(node: HSNode, conflict_sets: list[list[str]], solutions: l
         # RECURSIVE CASE: Explore each component in the selected conflict
         children = node.create_children(selected_conflict)
         for child in children:
-            hs_tree_recursive(child, conflict_sets, solutions, heuristic_func)
+            hs_tree_recursive(child, conflict_sets, solutions, heuristic_func, visit_count)
 
 def run_hitting_set_algorithm(conflict_sets, heuristic="smallest"):
     """
@@ -130,13 +195,20 @@ def run_hitting_set_algorithm(conflict_sets, heuristic="smallest"):
 
     heuristic_func = HEURISTICS[heuristic]
 
+    # Measure execution time
+    start_time = time.perf_counter()
+
     # Run recursive HS-Tree
     hitting_sets = []
-    hs_tree_recursive([], conflict_sets, hitting_sets, heuristic_func)
+    visit_count = [0]  # Use list to allow modification in recursive calls
+    hs_tree_recursive(HSNode([]), conflict_sets, hitting_sets, heuristic_func, visit_count)
 
+    # Filter to minimal hitting sets
+    minimal_hitting_sets = get_minimal_hitting_sets(hitting_sets)
 
+    elapsed_time = time.perf_counter() - start_time
 
-    return hitting_sets, minimal_hitting_sets
+    return hitting_sets, minimal_hitting_sets, visit_count[0], elapsed_time
 
 
 # -----------------------------------------BRUTE FORCE----------------------------------------------
@@ -153,12 +225,9 @@ def hits_all(combo, conflict_sets):
     Returns:
     bool: True if combo hits all conflict sets, False otherwise
     """
-    print(f"Checking if {combo} hits all conflict sets: {conflict_sets}")
     for conflict in conflict_sets:
         if not any(component in conflict for component in combo):
-            print(f"Combo {combo} does not hit conflict {conflict}")
             return False
-    print(f"Combo {combo} hits all conflict sets")
     return True
 
 
@@ -171,7 +240,6 @@ def run_brute_force_algorithm(conflict_sets):
     """ 
     
     components = set().union(*conflict_sets)
-    print(f"Components: {components}")
 
     # Convert to sorted list for consistent output
     components_list = sorted(list(components))
@@ -183,20 +251,7 @@ def run_brute_force_algorithm(conflict_sets):
             if hits_all(combo, conflict_sets):
                 hitting_sets.append(list(combo))
     
-    # Filter to minimal hitting sets, so remove supersets
-    minimal_hitting_sets = []
-    for hitting_set in hitting_sets:
-        is_minimal = True
-        hitting_set_set = set(hitting_set)
-        
-        # Check if any other hitting set is a strict subset
-        for others in hitting_sets:
-            others_set = set(others)
-            if others_set < hitting_set_set:  # Strict subset
-                is_minimal = False
-                break
-        
-        if is_minimal:
-            minimal_hitting_sets.append(hitting_set)
+    # Filter to minimal hitting sets
+    minimal_hitting_sets = get_minimal_hitting_sets(hitting_sets)
     
     return hitting_sets, minimal_hitting_sets

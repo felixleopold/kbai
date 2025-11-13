@@ -2,6 +2,38 @@ import schemdraw
 import schemdraw.logic as logic
 import schemdraw.elements as elm
 import webbrowser
+import os
+from pathlib import Path
+
+
+def open_circuit_file(filename):
+    """Open the circuit SVG file in the browser with absolute path."""
+    # Get the absolute path to the file
+    script_dir = Path(__file__).parent.absolute()
+    file_path = script_dir / filename
+    file_path_str = str(file_path)
+    
+    # Check if file exists
+    if not file_path.exists():
+        print(f"Warning: Circuit file {filename} not found at {file_path_str}")
+        return
+    
+    # Try to open in browser
+    try:
+        # Use absolute path directly - webbrowser should handle it
+        file_url = file_path.as_uri()  # This creates proper file:// URL
+        webbrowser.open(file_url)
+        print(f"Opened circuit diagram: {file_path_str}")
+    except Exception as e:
+        # Fallback: try using macOS 'open' command
+        try:
+            import subprocess
+            subprocess.run(['open', file_path_str], check=True)
+            print(f"Opened circuit diagram: {file_path_str}")
+        except Exception as e2:
+            print(f"Could not open browser automatically. File saved at: {file_path_str}")
+            print(f"Please open manually: {file_path_str}")
+            print(f"Error: {e2}")
 
 
 def plot_circuit(document):
@@ -19,12 +51,16 @@ def plot_circuit(document):
         plot_circuit_6()
     elif document == 'circuit7.txt':
         plot_circuit_7()
+    elif document == 'circuit8.txt':
+        plot_circuit_8()
+    elif document == 'circuit9.txt':
+        plot_circuit_9()
     else:
         print("Sorry, I do not have instructions on how to plot this circuit.")
 
 
 def plot_circuit_1():
-    with schemdraw.Drawing(file='.circuit.svg', show=False) as d:
+    with schemdraw.Drawing(file='circuit1.svg', show=False) as d:
         # Components
         x1 = d.add(logic.Xor(inputs=2).label('X1').at((0,0.25)))
         a1 = d.add(logic.And(inputs=2).label('A1').at((4,-2)))
@@ -50,11 +86,11 @@ def plot_circuit_1():
         d.add(elm.Dot().at(o1.out).label('0', loc='right'))
         d.add(elm.Dot().at(x2.out).label('1', loc='right'))
 
-    webbrowser.open('.circuit.svg')
+    open_circuit_file('circuit1.svg')
 
 
 def plot_circuit_2():
-    with schemdraw.Drawing(file='.circuit.svg', show=False) as d:
+    with schemdraw.Drawing(file='circuit2.svg', show=False) as d:
         # Components (4 XORs)
         x1 = d.add(logic.Xor(inputs=2).label('X1').at((-1, 2)))
         x2 = d.add(logic.Xor(inputs=2).label('X2').at((-1, 0)))
@@ -77,11 +113,11 @@ def plot_circuit_2():
         d.add(elm.Dot().at(x3.out).label('1', loc='right'))
         d.add(elm.Dot().at(x4.out).label('0', loc='right'))
 
-    webbrowser.open('.circuit.svg')
+    open_circuit_file('circuit2.svg')
 
 
 def plot_circuit_3():
-    with schemdraw.Drawing(file='.circuit.svg', show=False) as d:
+    with schemdraw.Drawing(file='circuit3.svg', show=False) as d:
         # XOR gate
         x = d.add(logic.Xor(inputs=2).label('X'))
         # Place AND gate below
@@ -97,11 +133,11 @@ def plot_circuit_3():
         d.add(elm.Dot().at(x.out).label('0', loc='right'))
         d.add(elm.Dot().at(a.out).label('1', loc='right'))
 
-    webbrowser.open('circuitssvg/circuit3.svg')
+    open_circuit_file('circuit3.svg')
 
 
 def plot_circuit_4():
-    with schemdraw.Drawing(file='.circuit.svg', show=False) as d:
+    with schemdraw.Drawing(file='circuit4.svg', show=False) as d:
         # Gates
         a1 = d.add(logic.And(inputs=2).label('A1').at((3, 4)))
         o1 = d.add(logic.Or(inputs=2).label('O1').at((3, 2)))
@@ -126,10 +162,10 @@ def plot_circuit_4():
         # Output label
         d.add(elm.Dot().at(o2.out).label('1', loc='right'))
 
-    webbrowser.open('.circuit.svg')
+    open_circuit_file('circuit4.svg')
 
 def plot_circuit_5():
-    with schemdraw.Drawing(file='.circuit.svg', show=False) as d:
+    with schemdraw.Drawing(file='circuit5.svg', show=False) as d:
         # Gates in a row
         a1 = d.add(logic.And(inputs=2).label('A1').at((0, 2)))
         a2 = d.add(logic.And(inputs=2).label('A2').at((2, 1.5)))
@@ -154,11 +190,11 @@ def plot_circuit_5():
         # Output label
         d.add(elm.Dot().at(a5.out).label('0', loc='right'))
 
-    webbrowser.open('.circuit.svg')
+    open_circuit_file('circuit5.svg')
 
 
 def plot_circuit_6():
-    with schemdraw.Drawing(file='.circuit.svg', show=False) as d:
+    with schemdraw.Drawing(file='circuit6.svg', show=False) as d:
         a1 = d.add(logic.And(inputs=2).label('A1'))
         a2 = d.add(logic.And(inputs=2).label('A2').at((0, -2)))
         a3 = d.add(logic.And(inputs=2).label('A3').at((0, -4)))
@@ -192,11 +228,11 @@ def plot_circuit_6():
         # Output observation
         d.add(elm.Dot().at(x1.out).label('0', loc='right'))
 
-    webbrowser.open('.circuit.svg')
+    open_circuit_file('circuit6.svg')
 
 
 def plot_circuit_7():
-    with schemdraw.Drawing(file='.circuit.svg', show=False) as d:
+    with schemdraw.Drawing(file='circuit7.svg', show=False) as d:
         a1 = d.add(logic.And(inputs=2).label('A1'))
         a2 = d.add(logic.And(inputs=2).label('A2').at((0, -3)))
         a3 = d.add(logic.And(inputs=2).label('A3').at((0, -6)))
@@ -244,4 +280,81 @@ def plot_circuit_7():
         d.add(elm.Dot().at(o4.out).label('1', loc='right'))
         d.add(elm.Dot().at(o5.out).label('0', loc='right'))
 
-    webbrowser.open('.circuit.svg')
+    open_circuit_file('circuit7.svg')
+
+def plot_circuit_8():
+    with schemdraw.Drawing(file='circuit8.svg', show=False) as d:
+        # AND gates - arranged vertically
+        a1 = d.add(logic.And(inputs=2).label('A1').at((0, 5)))
+        a2 = d.add(logic.And(inputs=2).label('A2').at((0, 3)))
+        a3 = d.add(logic.And(inputs=2).label('A3').at((0, 1)))
+        a4 = d.add(logic.And(inputs=2).label('A4').at((0, -1)))
+        a5 = d.add(logic.And(inputs=2).label('A5').at((0, -3)))
+        a6 = d.add(logic.And(inputs=2).label('A6').at((0, -5)))
+        a7 = d.add(logic.And(inputs=2).label('A7').at((0, -7)))
+        a8 = d.add(logic.And(inputs=2).label('A8').at((0, -9)))
+        
+        # OR gates
+        o1 = d.add(logic.Or(inputs=2).label('O1').at((3, 4)))
+        o2 = d.add(logic.Or(inputs=2).label('O2').at((3, 0)))
+        o3 = d.add(logic.Or(inputs=2).label('O3').at((3, -4)))
+        o4 = d.add(logic.Or(inputs=2).label('O4').at((3, -8)))
+        
+        # Connections
+        d.add(elm.Line().at(a1.out).to(o1.in1))
+        d.add(elm.Line().at(a2.out).to(o1.in2))
+        d.add(elm.Line().at(a3.out).to(o2.in1))
+        d.add(elm.Line().at(a4.out).to(o2.in2))
+        d.add(elm.Line().at(a5.out).to(o3.in1))
+        d.add(elm.Line().at(a6.out).to(o3.in2))
+        d.add(elm.Line().at(a7.out).to(o4.in1))
+        d.add(elm.Line().at(a8.out).to(o4.in2))
+        
+        # Input labels (all 0)
+        for gate in [a1, a2, a3, a4, a5, a6, a7, a8]:
+            d.add(elm.Dot().at(gate.in1).label('0', loc='left'))
+            d.add(elm.Dot().at(gate.in2).label('0', loc='left'))
+        
+        # Output observations (all 1, which is wrong!)
+        d.add(elm.Dot().at(o1.out).label('1', loc='right'))
+        d.add(elm.Dot().at(o2.out).label('1', loc='right'))
+        d.add(elm.Dot().at(o3.out).label('1', loc='right'))
+        d.add(elm.Dot().at(o4.out).label('1', loc='right'))
+    
+    open_circuit_file('circuit8.svg')
+
+
+def plot_circuit_9():
+    with schemdraw.Drawing(file='circuit9.svg', show=False) as d:
+        # AND gates
+        a1 = d.add(logic.And(inputs=2).label('A1').at((0, 3)))
+        a2 = d.add(logic.And(inputs=2).label('A2').at((0, 0)))
+        a3 = d.add(logic.And(inputs=2).label('A3').at((0, -3)))
+        
+        # XOR gates
+        x1 = d.add(logic.Xor(inputs=2).label('X1').at((3, 1.5)))
+        x2 = d.add(logic.Xor(inputs=2).label('X2').at((3, -1.5)))
+        
+        # OR gate
+        o1 = d.add(logic.Or(inputs=2).label('O1').at((6, 0)))
+        
+        # Connections
+        d.add(elm.Line().at(a1.out).to(x1.in1))
+        d.add(elm.Line().at(a2.out).to(x1.in2))
+        d.add(elm.Line().at(a2.out).to(x2.in1))
+        d.add(elm.Line().at(a3.out).to(x2.in2))
+        d.add(elm.Line().at(x1.out).to(o1.in1))
+        d.add(elm.Line().at(x2.out).to(o1.in2))
+        
+        # Input labels
+        d.add(elm.Dot().at(a1.in1).label('1', loc='left'))
+        d.add(elm.Dot().at(a1.in2).label('1', loc='left'))
+        d.add(elm.Dot().at(a2.in1).label('1', loc='left'))
+        d.add(elm.Dot().at(a2.in2).label('1', loc='left'))
+        d.add(elm.Dot().at(a3.in1).label('1', loc='left'))
+        d.add(elm.Dot().at(a3.in2).label('1', loc='left'))
+        
+        # Output observations
+        d.add(elm.Dot().at(o1.out).label('1', loc='right'))
+    
+    open_circuit_file('circuit9.svg')
