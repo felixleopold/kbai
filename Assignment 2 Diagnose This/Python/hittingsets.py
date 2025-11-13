@@ -81,15 +81,25 @@ def get_minimal_hitting_sets(hitting_sets: list[list[str]]) -> list[list[str]]:
     hitting_sets: List of all hitting sets
     
     Returns:
-    List of minimal hitting sets (supersets removed)
+    List of minimal hitting sets (supersets and duplicates removed)
     """
-    minimal_hitting_sets = []
+    # Remove duplicates first
+    seen = set()
+    unique_hitting_sets = []
     for hitting_set in hitting_sets:
+        key = tuple(sorted(hitting_set))
+        if key not in seen:
+            seen.add(key)
+            unique_hitting_sets.append(hitting_set)
+    
+    # Filter to minimal hitting sets (remove supersets)
+    minimal_hitting_sets = []
+    for hitting_set in unique_hitting_sets:
         is_minimal = True
         hitting_set_set = set(hitting_set)
         
         # Check if any other hitting set is a strict subset
-        for others in hitting_sets:
+        for others in unique_hitting_sets:
             others_set = set(others)
             if others_set < hitting_set_set:  # Strict subset
                 is_minimal = False
@@ -120,9 +130,10 @@ def select_random_conflict(uncovered_conflicts: list[list[str]]) -> list[str]:
 
 def select_most_frequent_component_conflict(uncovered_conflicts: list[list[str]]) -> list[str]:
     """
-    Heuristic: Select the conflict with the most frequent component from all uncovered conflicts
+    Heuristic: Select the first conflict containing the most frequent component from all uncovered conflicts
     
     Idea: Components appearing in many conflicts are more likely to be part of minimal hitting sets
+    Returns the first conflict (in order) that contains the most frequent component
     """
     # Count how often each component appears in all uncovered conflicts
     component_counts = {}
@@ -136,8 +147,8 @@ def select_most_frequent_component_conflict(uncovered_conflicts: list[list[str]]
     # Find conflicts with the most frequent component
     conflicts_with_most_frequent = [conflict for conflict in uncovered_conflicts if most_frequent_component in conflict]
     
-    # Return the smallest of the conflicts found
-    return min(conflicts_with_most_frequent, key=len)
+    # Return the first conflict found (not the smallest)
+    return conflicts_with_most_frequent[0]
 
 
 # Heuristic names to functions

@@ -11,10 +11,10 @@ from os.path import join
 ALGORITHM = "hs_tree"
 
 # Document options: "circuit1.txt", "circuit2.txt", "circuit3.txt", etc.
-DOCUMENT = "circuit8.txt"
+DOCUMENT = "circuit1.txt"
 
 # # Heuristic options: "smallest", "most_frequent", "random"
-HEURISTIC = "smallest"
+HEURISTIC = "random"
 
 # Game mode:
 GAME = False
